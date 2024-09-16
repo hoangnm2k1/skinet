@@ -1,7 +1,6 @@
 ﻿﻿using Core.Entities;
 
 namespace Core.Interfaces;
-
 public interface IGenericRepository<T> where T : BaseEntity
 {
     Task<T?> GetByIdAsync(int id);
@@ -16,4 +15,4 @@ public interface IGenericRepository<T> where T : BaseEntity
     Task<bool> SaveAllAsync();
     bool Exists(int id);
     Task<int> CountAsync(ISpecification<T> spec);
-}   
+}

@@ -8,9 +8,9 @@ public class BaseSpecification<T>(Expression<Func<T, bool>>? criteria) : ISpecif
     protected BaseSpecification() : this(null) { }
 
     public Expression<Func<T, bool>>? Criteria => criteria;
-
+    
     public Expression<Func<T, object>>? OrderBy { get; private set; }
-
+    
     public Expression<Func<T, object>>? OrderByDescending { get; private set; }
 
     public bool IsDistinct { get; private set; }
@@ -45,7 +45,7 @@ public class BaseSpecification<T>(Expression<Func<T, bool>>? criteria) : ISpecif
     {
         IsDistinct = true;
     }
-    
+
     protected void ApplyPaging(int skip, int take)
     {
         Skip = skip;
@@ -59,7 +59,7 @@ public class BaseSpecification<T, TResult>(Expression<Func<T, bool>> criteria)
 {
     protected BaseSpecification() : this(null!) { }
     public Expression<Func<T, TResult>>? Select { get; private set; }
-
+    
     protected void AddSelect(Expression<Func<T, TResult>> selectExpression)
     {
         Select = selectExpression;
