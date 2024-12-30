@@ -5,22 +5,28 @@ using Stripe;
 
 namespace Infrastructure.Services;
 
-public class PaymentService(IConfiguration config, ICartService cartService,
-   IUnitOfWork unit) : IPaymentService
+public class PaymentService : IPaymentService
 {
+    private readonly ICartService cartService;
+    private readonly IUnitOfWork unit;
+
+    public PaymentService(IConfiguration config, ICartService cartService, IUnitOfWork unit)
+    {
+        this.cartService = cartService;
+        this.unit = unit;
+        StripeConfiguration.ApiKey = config["StripeSettings:SecretKey"];
+    }
+
     public async Task<ShoppingCart?> CreateOrUpdatePaymentIntent(string cartId)
     {
-        StripeConfiguration.ApiKey = config["StripeSettings:SecretKey"];
-
-        var cart = await cartService.GetCartAsync(cartId)
-            ?? throw new Exception("Cart unavailable");
+        var cart = await cartService.GetCartAsync(cartId) ?? throw new Exception("Cart unavailable");
 
         var shippingPrice = await GetShippingPriceAsync(cart) ?? 0;
 
         await ValidateCartItemsInCartAsync(cart);
 
         var subtotal = CalculateSubtotal(cart);
-        
+
         if (cart.Coupon != null)
         {
             subtotal = await ApplyDiscountAsync(cart.Coupon, subtotal);
@@ -33,6 +39,20 @@ public class PaymentService(IConfiguration config, ICartService cartService,
         await cartService.SetCartAsync(cart);
 
         return cart;
+    }
+
+    public async Task<string> RefundPayment(string paymentIntentId)
+    {
+        var refundOptions = new RefundCreateOptions
+        {
+            PaymentIntent = paymentIntentId
+        };
+
+        var refundService = new RefundService();
+        
+        var result = await refundService.CreateAsync(refundOptions);
+
+        return result.Status;
     }
 
     private async Task CreateUpdatePaymentIntentAsync(ShoppingCart cart, long total)
@@ -66,12 +86,12 @@ public class PaymentService(IConfiguration config, ICartService cartService,
         var couponService = new Stripe.CouponService();
 
         var coupon = await couponService.GetAsync(appCoupon.CouponId);
-        
+
         if (coupon.AmountOff.HasValue)
         {
             amount -= (long)coupon.AmountOff * 100;
         }
-        
+
         if (coupon.PercentOff.HasValue)
         {
             var discount = amount * (coupon.PercentOff.Value / 100);
@@ -111,7 +131,9 @@ public class PaymentService(IConfiguration config, ICartService cartService,
 
             return (long)deliveryMethod.Price * 100;
         }
-        
+
         return null;
     }
+
+
 }
